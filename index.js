@@ -1,15 +1,22 @@
-const AwsPolicies = require("./aws-policies");
+const RouteStackLayer = require("./RouteStackLayer").inject();
 
-function Servless(config) {
-    this.config = config;
-}
+module.exports = function(_options){
 
-Servless.prototype.getPolicies = function(teamId) {
-    return AwsPolicies.getPolicies(this.config);
-}
+    function Servless(config) {
+        this.config = config;
+        this.AwsPolicies = require("./AwsPolicies").inject(this.config);
 
-exports.getPolicies = function(){
+        this.endPoints = [];
+        this.enviornmentVariables = [];
+    }
 
+    Servless.prototype.route = function(path) {
+        return RouteStackLayer.route(path);
+    };
+
+    Servless.prototype.getPolicies = function() {
+        return this.AwsPolicies.getPolicies(this.config);
+    };
+
+    return new Servless(_options);
 };
-
-module.exports = Servless;
