@@ -1,7 +1,11 @@
 const underscore = require('underscore');
+const path = require("path");
 
 underscore.extend(module.exports, {inject: function init(_options) {
         function RouteStackLayer(config) {
+            if(config === undefined){
+                config = {};
+            }
             this.config = config;
             this.requiredPolicies = [];
             this.parent = this.config["parent"] || null;
@@ -13,8 +17,8 @@ underscore.extend(module.exports, {inject: function init(_options) {
         RouteStackLayer.prototype.getCurrentConfig = function(){
             return {
                 parent: this.config["parent"],
-                command: config["command"],
-                path: config["path"]
+                command: this.config["command"],
+                path: this.config["path"]
             }
         };
 
@@ -79,7 +83,13 @@ underscore.extend(module.exports, {inject: function init(_options) {
             let config = this.getCurrentConfig();
             config["path"] = path;
             config["parent"] = this;
-            return this.children.push(new RouteStackLayer(config));
+            let child = new RouteStackLayer(config);
+            this.children.push(child);
+            return child;
+        };
+
+        RouteStackLayer.prototype.getPath = function(){
+            return this.path;
         };
 
         RouteStackLayer.prototype.getFullPath = function(){
@@ -87,13 +97,18 @@ underscore.extend(module.exports, {inject: function init(_options) {
                 return path.join(this.parent.getFullPath(), this.config.path)
             }
             else{
-                return this.config["path"];
+                return this.path;
             }
         };
 
         RouteStackLayer.prototype.getCommand = function(){
             return this.command;
         };
+
+        RouteStackLayer.prototype.getChildren = function(){
+            return this.children;
+        };
+
 
         RouteStackLayer.prototype.getRequiredAWSPolicies = function(){
             if(this.parent !== null){

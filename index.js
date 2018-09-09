@@ -8,14 +8,20 @@ module.exports = function(_options){
 
         this.endPoints = [];
         this.enviornmentVariables = [];
+        this.root = null;
     }
 
     Servless.prototype.route = function(path) {
-        return RouteStackLayer.route(path);
+        this.root = RouteStackLayer.route(path);
+        return this.root;
     };
 
     Servless.prototype.getPolicies = function() {
         return this.AwsPolicies.getPolicies(this.config);
+    };
+
+    Servless.prototype.getRoot = function(){
+        return this.root;
     };
 
     return new Servless(_options);
