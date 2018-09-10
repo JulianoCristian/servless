@@ -1,5 +1,7 @@
 const underscore = require('underscore');
 const path = require("path");
+const flatten = require('flatten');
+const Promise = require("bluebird");
 
 function formatPath(path){
     // make sure the path starts with a slash and has no trailing slash
@@ -152,6 +154,19 @@ underscore.extend(module.exports, {inject: function init(_options) {
                 return this.requiredPolicies
             }
         };
+
+        RouteStackLayer.prototype.getAllAWSPoliciesInTree = function(){
+            if(this.children.length === 0){
+                return this.requiredPolicies;
+            }
+            else{
+                return flatten(this.children.map(elem => {
+                    return elem.getAllAWSPoliciesInTree();
+                })
+                    .concat(this.requiredPolicies));
+            }
+        };
+
 
         return new RouteStackLayer(_options);
     }});

@@ -1,10 +1,11 @@
 const RouteStackLayer = require("./RouteStackLayer").inject();
+const Promise = require("bluebird");
 
 var _instanceOfServless = null;
 
 function Servless(config) {
     this.config = config;
-    this.AwsPolicies = require("./AwsPolicies").inject(this.config);
+    this.AwsPolicies = require("../../servless-cli/AwsPolicies").inject(this.config);
 
     this.endPoints = [];
     this.enviornmentVariables = [];
@@ -14,10 +15,6 @@ function Servless(config) {
 Servless.prototype.route = function(path) {
     this.root = RouteStackLayer.route(path);
     return this.root;
-};
-
-Servless.prototype.getPolicies = function() {
-    return this.AwsPolicies.getPolicies(this.config);
 };
 
 Servless.prototype.getRoot = function() {
@@ -32,13 +29,10 @@ exports.handleCall = function(event, context, callback) {
     console.log("here");
     console.log(JSON.stringify(event, null, 4));
     console.log(JSON.stringify(context, null, 4));
-    _instanceOfServless.getPolicies()
-        .then( policies => {
-            callback(null, {StatusCode:200, Body:JSON.stringify({
-                    "policies": policies
-                })
-            });
-        });
+    callback(null, {StatusCode:200, Body:JSON.stringify({
+            "policies": policies
+        })
+    });
     };
 
 exports.initWithConfig = function (_options) {
