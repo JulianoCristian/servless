@@ -26,6 +26,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
             this.command = config["command"] || "";
             this.path = config["path"] || "";
             this.children = [];
+            this.promiseFunction = config["promiseFunction"] || null;
         };
 
         RouteStackLayer.prototype.getCurrentConfig = function(){
@@ -58,46 +59,59 @@ underscore.extend(module.exports, {inject: function init(_options) {
         };
 
         // READ
-        RouteStackLayer.prototype.get = function(){
+        RouteStackLayer.prototype.get = function(promiseFunction){
             let config = this.getCurrentConfig();
             config["path"] = "";
             config["command"] = "GET";
             config["parent"] = this;
+            config["promiseFunction"] = promiseFunction;
             this.children.push(new RouteStackLayer(config));
             return this;
         };
 
         // UPDATE
-        RouteStackLayer.prototype.put = function(){
+        RouteStackLayer.prototype.put = function(promiseFunction){
             let config = this.getCurrentConfig();
             config["path"] = "";
             config["command"] = "PUT";
             config["parent"] = this;
+            config["promiseFunction"] = promiseFunction;
             this.children.push(new RouteStackLayer(config));
             return this;
         };
 
         // CREATE
-        RouteStackLayer.prototype.post = function(){
+        RouteStackLayer.prototype.post = function(promiseFunction){
             let config = this.getCurrentConfig();
             config["path"] = "";
             config["command"] = "POST";
             config["parent"] = this;
+            config["promiseFunction"] = promiseFunction;
             this.children.push(new RouteStackLayer(config));
             return this;
         };
 
         // DELETE
-        RouteStackLayer.prototype.delete = function(){
+        RouteStackLayer.prototype.delete = function(promiseFunction){
             let config = this.getCurrentConfig();
             config["path"] = "";
             config["command"] = "DELETE";
             config["parent"] = this;
+            config["promiseFunction"] = promiseFunction;
             this.children.push(new RouteStackLayer(config));
             return this;
         };
 
         RouteStackLayer.prototype.route = function(path){
+            // make sure to format our paths without slashes
+            if(path.endsWith("/")){
+                path = path.substring(0, path.length - 1)
+            }
+
+            if(path.startsWith("/")){
+                path = path.substring(1, path.length - 1)
+            }
+
             let config = this.getCurrentConfig();
             config["path"] = path;
             config["parent"] = this;
@@ -107,7 +121,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         };
 
         RouteStackLayer.prototype.getPath = function(){
-            return this.path;
+            return this.path + "/";
         };
 
         RouteStackLayer.prototype.getFullPath = function(){
@@ -120,7 +134,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         };
 
         RouteStackLayer.prototype.getGeneratedFunctionName = function(){
-            return this.getFullPath().replace(/\//g,"_");
+            return this.getFullPath().replace(/\//g,"_") + this.getCommand();
         };
 
         RouteStackLayer.prototype.getCommand = function(){
@@ -131,6 +145,39 @@ underscore.extend(module.exports, {inject: function init(_options) {
             return this.children;
         };
 
+        RouteStackLayer.prototype.getFunctionByPathAndCommand = function(thePath, command){
+            return this._internalGetFunctionByPathAndCommand(thePath.split("/").filter(elem => {return elem != "" && elem !== null}), command)
+        };
+
+        RouteStackLayer.prototype._internalGetFunctionByPathAndCommand = function(pathList, command){
+            // we've traversed our stack tree all the way
+            // find GET,POST,PUT,DELETE
+            if(pathList.length == 0){
+                let func = this.children.filter(elem => {
+                    return elem.getCommand() == command;
+                });
+
+                if(func.length > 0){
+                    return func[0].promiseFunction;
+                }
+                else{
+                    throw("Could not find any route with this path");
+                }
+            }
+            // else keep traversing the tree
+            else{
+                let rightKid = this.children.filter(elem => {
+                    return elem.path == pathList[0];
+                });
+
+                if(rightKid.length > 0){
+                    return rightKid[0]._internalGetFunctionByPathAndCommand(pathList.slice(1), command);
+                }
+                else{
+                    throw("Could not find any route with this path");
+                }
+            }
+        };
 
         RouteStackLayer.prototype.getRequiredAWSPolicies = function(){
             if(this.parent !== null){

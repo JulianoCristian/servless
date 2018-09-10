@@ -5,7 +5,6 @@ var _instanceOfServless = null;
 
 function Servless(config) {
     this.config = config;
-    this.AwsPolicies = require("../../servless-cli/AwsPolicies").inject(this.config);
 
     this.endPoints = [];
     this.enviornmentVariables = [];
@@ -27,25 +26,23 @@ exports.getCurrentInstance = function(){
 
 exports.handleCall = function(event, context, callback) {
     console.log("here");
-    console.log(JSON.stringify(event, null, 4));
-    console.log(JSON.stringify(context, null, 4));
-    callback(null, {StatusCode:200, Body:JSON.stringify({
-            "policies": policies
-        })
-    });
-    };
+    console.log(event.resource);
+    console.log(event.requestContext.httpMethod);
+
+    let f = _instanceOfServless.getRoot().getFunctionByPathAndCommand(event.resource, event.requestContext.httpMethod);
+
+    console.log("found function");
+    return f(event, context).then(result =>{
+        callback(null, {StatusCode:200, Body:JSON.stringify(result)});
+    })
+    .catch(err =>{
+        return {StatusCode:500, Body:JSON.stringify(err)}
+    })
+};
 
 exports.initWithConfig = function (_options) {
     _instanceOfServless = new Servless(_options);
     return _instanceOfServless
 };
 
-
 module.exports = exports;
-/*
-module.exports = function(_options){
-
-
-
-    return new Servless(_options);
-};*/
