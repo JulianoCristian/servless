@@ -2,6 +2,16 @@ const RouteStackLayer = require("./RouteStackLayer").inject();
 
 module.exports = function(_options){
 
+    function handleCall(event, context) {
+        console.log("inside the app for realz");
+        return {
+            StatusCode: 200,
+            Body: JSON.stringify({
+                message: 'Go Serverless v1.0! Your function executed successfully!'
+            }),
+        }
+    };
+
     function Servless(config) {
         this.config = config;
         this.AwsPolicies = require("./AwsPolicies").inject(this.config);
@@ -9,7 +19,7 @@ module.exports = function(_options){
         this.endPoints = [];
         this.enviornmentVariables = [];
         this.root = null;
-    }
+    };
 
     Servless.prototype.route = function(path) {
         this.root = RouteStackLayer.route(path);

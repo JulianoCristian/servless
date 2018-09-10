@@ -1,14 +1,26 @@
 const underscore = require('underscore');
 const path = require("path");
 
+function formatPath(path){
+    // make sure the path starts with a slash and has no trailing slash
+    if(path.startsWith("/") === false){
+        path = "/" + path;
+    }
+
+    if(path.endsWith("/") === true && path.length > 1){
+        path = path.substring(0, path.length - 1);
+    }
+
+    return path;
+}
+
 underscore.extend(module.exports, {inject: function init(_options) {
         function RouteStackLayer(config) {
             if(config === undefined){
                 config = {};
             }
-            this.config = config;
             this.requiredPolicies = [];
-            this.parent = this.config["parent"] || null;
+            this.parent = config["parent"] || null;
             this.command = config["command"] || "";
             this.path = config["path"] || "";
             this.children = [];
@@ -16,9 +28,9 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         RouteStackLayer.prototype.getCurrentConfig = function(){
             return {
-                parent: this.config["parent"],
-                command: this.config["command"],
-                path: this.config["path"]
+                parent: this.parent,
+                command: this.command,
+                path: this.path
             }
         };
 
@@ -46,6 +58,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         // READ
         RouteStackLayer.prototype.get = function(){
             let config = this.getCurrentConfig();
+            config["path"] = "";
             config["command"] = "GET";
             config["parent"] = this;
             this.children.push(new RouteStackLayer(config));
@@ -55,6 +68,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         // UPDATE
         RouteStackLayer.prototype.put = function(){
             let config = this.getCurrentConfig();
+            config["path"] = "";
             config["command"] = "PUT";
             config["parent"] = this;
             this.children.push(new RouteStackLayer(config));
@@ -64,6 +78,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         // CREATE
         RouteStackLayer.prototype.post = function(){
             let config = this.getCurrentConfig();
+            config["path"] = "";
             config["command"] = "POST";
             config["parent"] = this;
             this.children.push(new RouteStackLayer(config));
@@ -73,6 +88,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
         // DELETE
         RouteStackLayer.prototype.delete = function(){
             let config = this.getCurrentConfig();
+            config["path"] = "";
             config["command"] = "DELETE";
             config["parent"] = this;
             this.children.push(new RouteStackLayer(config));
@@ -94,11 +110,15 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         RouteStackLayer.prototype.getFullPath = function(){
             if(this.parent !== null) {
-                return path.join(this.parent.getFullPath(), this.config.path)
+                return formatPath(path.join(this.parent.getFullPath(), this.path));
             }
             else{
-                return this.path;
+                return formatPath(this.path);
             }
+        };
+
+        RouteStackLayer.prototype.getGeneratedFunctionName = function(){
+            return this.getFullPath().replace(/\//g,"_");
         };
 
         RouteStackLayer.prototype.getCommand = function(){
