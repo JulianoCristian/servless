@@ -134,10 +134,6 @@ underscore.extend(module.exports, {inject: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype.getGeneratedFunctionName = function(){
-            return this.getFullPath().replace(/\//g,"_") + this.getCommand();
-        };
-
         RouteStackLayer.prototype.getCommand = function(){
             return this.command;
         };
@@ -154,7 +150,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
             let self = this;
             Object.keys(this.environmentVariables).forEach(elem => {
-                combinedEnv[elem] = self.environmentVariables[elem];
+                combinedEnv[elem] = "" + self.environmentVariables[elem];
             });
 
             return combinedEnv;
