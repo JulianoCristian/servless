@@ -25,18 +25,25 @@ exports.getCurrentInstance = function(){
 };
 
 exports.handleCall = function(event, context, callback) {
-    console.log("here");
     console.log(event.resource);
     console.log(event.requestContext.httpMethod);
 
     let f = _instanceOfServless.getRoot().getFunctionByPathAndCommand(event.resource, event.requestContext.httpMethod);
 
-    console.log("found function");
     return f(event, context).then(result =>{
-        callback(null, {StatusCode:200, Body:JSON.stringify(result)});
+        callback(null, {
+            isBase64Encoded: false,
+            headers: { "Content-Type": "application/json" },
+            statusCode:200,
+            body:JSON.stringify(result)});
     })
     .catch(err =>{
-        return {StatusCode:500, Body:JSON.stringify(err)}
+        return {
+            statusCode:500,
+            isBase64Encoded: false,
+            headers: { "Content-Type": "application/json" },
+            body:JSON.stringify(err)
+        }
     })
 };
 

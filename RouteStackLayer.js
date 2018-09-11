@@ -18,7 +18,7 @@ function formatPath(path){
 
 underscore.extend(module.exports, {inject: function init(_options) {
         function RouteStackLayer(config) {
-            if(config === undefined){
+            if (config === undefined) {
                 config = {};
             }
             this.requiredPolicies = [];
@@ -27,14 +27,15 @@ underscore.extend(module.exports, {inject: function init(_options) {
             this.path = config["path"] || "";
             this.children = [];
             this.promiseFunction = config["promiseFunction"] || null;
+            this.environmentVariables = config["environmentVariables"] || {};
         };
 
-        RouteStackLayer.prototype.getCurrentConfig = function(){
-            return {
-                parent: this.parent,
-                command: this.command,
-                path: this.path
-            }
+        RouteStackLayer.prototype.environment = function(vars){
+            Object.keys(vars).forEach(elem => {
+                this.environmentVariables[elem] = vars[elem];
+            });
+
+            return this;
         };
 
         RouteStackLayer.prototype.needs = function(policies){
@@ -60,7 +61,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         // READ
         RouteStackLayer.prototype.get = function(promiseFunction){
-            let config = this.getCurrentConfig();
+            let config = {};
             config["path"] = "";
             config["command"] = "GET";
             config["parent"] = this;
@@ -71,7 +72,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         // UPDATE
         RouteStackLayer.prototype.put = function(promiseFunction){
-            let config = this.getCurrentConfig();
+            let config = {};
             config["path"] = "";
             config["command"] = "PUT";
             config["parent"] = this;
@@ -82,7 +83,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         // CREATE
         RouteStackLayer.prototype.post = function(promiseFunction){
-            let config = this.getCurrentConfig();
+            let config = {};
             config["path"] = "";
             config["command"] = "POST";
             config["parent"] = this;
@@ -93,7 +94,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         // DELETE
         RouteStackLayer.prototype.delete = function(promiseFunction){
-            let config = this.getCurrentConfig();
+            let config = {};
             config["path"] = "";
             config["command"] = "DELETE";
             config["parent"] = this;
@@ -112,7 +113,7 @@ underscore.extend(module.exports, {inject: function init(_options) {
                 path = path.substring(1, path.length - 1)
             }
 
-            let config = this.getCurrentConfig();
+            let config = {};
             config["path"] = path;
             config["parent"] = this;
             let child = new RouteStackLayer(config);
@@ -143,6 +144,20 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         RouteStackLayer.prototype.getChildren = function(){
             return this.children;
+        };
+
+        RouteStackLayer.prototype.getEnvironmentVariables = function(){
+            var combinedEnv = {};
+            if(this.parent !== null){
+                combinedEnv = this.parent.getEnvironmentVariables();
+            }
+
+            let self = this;
+            Object.keys(this.environmentVariables).forEach(elem => {
+                combinedEnv[elem] = self.environmentVariables[elem];
+            });
+
+            return combinedEnv;
         };
 
         RouteStackLayer.prototype.getFunctionByPathAndCommand = function(thePath, command){
