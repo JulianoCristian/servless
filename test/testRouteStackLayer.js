@@ -38,6 +38,7 @@ describe('Route State Layer', function() {
             assert.equal(doubleSlashesInside.getFullPath(), "/testing-double/slashes");
         });
 
+        var t = baseRoute.getAllRoutes();
         baseRoute.route("/rel-path", relativePaths);
         it('It should return awesome', function() {
             var theList = baseRoute.getAllRoutes();

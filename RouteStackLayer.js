@@ -17,7 +17,7 @@ function rawGetPathComponents(path){
     });
 }
 
-underscore.extend(module.exports, {inject: function init(_options) {
+underscore.extend(module.exports, {newInst: function init(_options) {
         function RouteStackLayer(config) {
             if (config === undefined) {
                 config = {};
@@ -125,6 +125,11 @@ underscore.extend(module.exports, {inject: function init(_options) {
                 let child = new RouteStackLayer(config);
                 this.children.push(child);
 
+                // make sure there are no duplicate routes, leading to un-deterministic behavior
+                if(this.listDuplicatePaths().length !== 0){
+                    throw("The route " + this.listDuplicatePaths()[0] + " already exists in this route stack");
+                }
+
                 // here we return the child, because the usecase is
                 // route("a")
                 // .route("path")
@@ -139,6 +144,11 @@ underscore.extend(module.exports, {inject: function init(_options) {
                 subroutes.parent = this;
                 this.children.push(subroutes);
 
+                // make sure there are no duplicate routes, leading to un-deterministic behavior
+                if(this.listDuplicatePaths().length !== 0){
+                    throw("The route " + this.listDuplicatePaths()[0] + " already exists in this route stack");
+                }
+
                 // note, here we return the origional object because this is used to attach relative paths to
                 // the current path.  Usecase is
                 // routes("apath", require("morepaths"))
@@ -148,6 +158,26 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         RouteStackLayer.prototype.getPath = function(){
             return rawGetPathComponents(this.path).join("/");
+        };
+
+        RouteStackLayer.prototype.listDuplicatePaths = function(){
+            var uniqueHash = {};
+            var dups = [];
+
+            var listRoutes = this.getRoot().getAllRoutes();
+            // note the call to get root, which will always give us the
+            // root member of this tree
+            this.getRoot().getAllRoutes().map(elem => {
+                var candidatePath = pathModule.join(elem.fullPath, elem.command);
+                if(candidatePath in uniqueHash){
+                    dups.push(candidatePath);
+                }
+                else{
+                    uniqueHash[candidatePath] = "a value";
+                }
+            });
+
+            return dups;
         };
 
         RouteStackLayer.prototype.getFullPathComponents = function() {
@@ -168,11 +198,20 @@ underscore.extend(module.exports, {inject: function init(_options) {
 
         RouteStackLayer.prototype.getAllRoutes = function(){
             if(this.children.length === 0){
-                return {fullPath: this.getFullPath(),
+                return [{fullPath: this.getFullPath(),
                         command: this.getCommand(),
-                        routeObject: this}
+                        routeObject: this}]
             }
             return flatten(this.children.map(elem => {return elem.getAllRoutes();}), 1);
+        };
+
+        RouteStackLayer.prototype.getRoot = function(){
+            if(this.parent === null){
+                return this;
+            }
+            else{
+                return this.parent.getRoot();
+            }
         };
 
         RouteStackLayer.prototype.getCommand = function(){

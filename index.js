@@ -1,5 +1,4 @@
-const RouteStackLayer = require("./RouteStackLayer").inject();
-const Promise = require("bluebird");
+const RouteStackLayer = require("./RouteStackLayer");
 
 var _instanceOfServless = null;
 
@@ -12,7 +11,7 @@ function Servless(config) {
 };
 
 Servless.prototype.route = function(path) {
-    this.root = RouteStackLayer.route(path);
+    this.root = RouteStackLayer.newInst().route(path);
     return this.root;
 };
 
@@ -53,7 +52,7 @@ exports.App = function (_options) {
 };
 
 exports.Routes = function () {
-    return RouteStackLayer.route();
+    return RouteStackLayer.newInst().route();
 };
 
 module.exports = exports;
