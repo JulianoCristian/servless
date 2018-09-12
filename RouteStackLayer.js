@@ -1,19 +1,20 @@
 const underscore = require('underscore');
-const path = require("path");
+const pathModule = require("path");
 const flatten = require('flatten');
 const Promise = require("bluebird");
 
-function formatPath(path){
-    // make sure the path starts with a slash and has no trailing slash
-    if(path.startsWith("/") === false){
-        path = "/" + path;
-    }
-
-    if(path.endsWith("/") === true && path.length > 1){
-        path = path.substring(0, path.length - 1);
-    }
-
-    return path;
+function rawGetPathComponents(path){
+    return path.split("/").map(elem => {
+        if(elem.length === 0){
+            return null
+        }
+        if(elem === "/"){
+            return null;
+        }
+        return elem
+    }).filter(elem => {
+        return elem !== null
+    });
 }
 
 underscore.extend(module.exports, {inject: function init(_options) {
@@ -103,35 +104,75 @@ underscore.extend(module.exports, {inject: function init(_options) {
             return this;
         };
 
-        RouteStackLayer.prototype.route = function(path){
+        RouteStackLayer.prototype.route = function(thePath, subroutes){
+            if(thePath === null || thePath === undefined || thePath === ""){
+                thePath = "/";
+            }
+
             // make sure to format our paths without slashes
-            if(path.endsWith("/")){
-                path = path.substring(0, path.length - 1)
+            if(thePath.endsWith("/")){
+                thePath = thePath.substring(0, thePath.length - 1)
             }
 
-            if(path.startsWith("/")){
-                path = path.substring(1, path.length - 1)
+            if(thePath.startsWith("/")){
+                thePath = thePath.substring(1, thePath.length)
             }
 
-            let config = {};
-            config["path"] = path;
-            config["parent"] = this;
-            let child = new RouteStackLayer(config);
-            this.children.push(child);
-            return child;
+            if(subroutes === null || subroutes === undefined){
+                let config = {};
+                config["path"] = thePath;
+                config["parent"] = this;
+                let child = new RouteStackLayer(config);
+                this.children.push(child);
+
+                // here we return the child, because the usecase is
+                // route("a")
+                // .route("path")
+                // .route("to/somewhere")
+                // .get(...)
+                return child;
+            }
+            else{
+                var partPath = subroutes.getFullPath();
+                var thisPath = rawGetPathComponents(pathModule.join(thePath, subroutes.getPath())).join("/");
+                subroutes.path = rawGetPathComponents(pathModule.join(thePath, subroutes.getPath())).join("/");
+                subroutes.parent = this;
+                this.children.push(subroutes);
+
+                // note, here we return the origional object because this is used to attach relative paths to
+                // the current path.  Usecase is
+                // routes("apath", require("morepaths"))
+                return this;
+            }
         };
 
         RouteStackLayer.prototype.getPath = function(){
-            return this.path + "/";
+            return rawGetPathComponents(this.path).join("/");
+        };
+
+        RouteStackLayer.prototype.getFullPathComponents = function() {
+            var parentPath = [];
+            if(this.parent !== null) {
+                parentPath = this.parent.getFullPathComponents();
+            }
+
+            var currentPath = rawGetPathComponents(this.path);
+
+            return parentPath.concat(currentPath);
         };
 
         RouteStackLayer.prototype.getFullPath = function(){
-            if(this.parent !== null) {
-                return formatPath(path.join(this.parent.getFullPath(), this.path));
+            return "/" + this.getFullPathComponents().join("/");
+        };
+
+
+        RouteStackLayer.prototype.getAllRoutes = function(){
+            if(this.children.length === 0){
+                return {fullPath: this.getFullPath(),
+                        command: this.getCommand(),
+                        routeObject: this}
             }
-            else{
-                return formatPath(this.path);
-            }
+            return flatten(this.children.map(elem => {return elem.getAllRoutes();}), 1);
         };
 
         RouteStackLayer.prototype.getCommand = function(){

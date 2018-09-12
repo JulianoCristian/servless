@@ -47,9 +47,13 @@ exports.handleCall = function(event, context, callback) {
     })
 };
 
-exports.initWithConfig = function (_options) {
+exports.App = function (_options) {
     _instanceOfServless = new Servless(_options);
-    return _instanceOfServless
+    return _instanceOfServless;
+};
+
+exports.Routes = function () {
+    return RouteStackLayer.route();
 };
 
 module.exports = exports;

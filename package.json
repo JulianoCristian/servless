@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +12,8 @@
     "aws-sdk": "^2.311.0",
     "bluebird": "^3.5.2",
     "underscore": "^1.9.1"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
   }
 }
