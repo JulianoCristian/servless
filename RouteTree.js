@@ -18,7 +18,7 @@ function rawGetPathComponents(path){
 }
 
 underscore.extend(module.exports, {newInst: function init(_options) {
-        function RouteStackLayer(config) {
+        function RouteTree(config) {
             if (config === undefined) {
                 config = {};
             }
@@ -31,7 +31,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             this.environmentVariables = config["environmentVariables"] || {};
         };
 
-        RouteStackLayer.prototype.environment = function(vars){
+        RouteTree.prototype.environment = function(vars){
             Object.keys(vars).forEach(elem => {
                 this.environmentVariables[elem] = vars[elem];
             });
@@ -39,7 +39,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return this;
         };
 
-        RouteStackLayer.prototype.needs = function(policies){
+        RouteTree.prototype.needs = function(policies){
             if(arguments.length === 1){
                 policies = arguments[0];
 
@@ -55,56 +55,56 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype._internalNeedsAsArray = function(policiesList){
+        RouteTree.prototype._internalNeedsAsArray = function(policiesList){
             this.requiredPolicies = this.requiredPolicies.concat(policiesList);
             return this;
         };
 
         // READ
-        RouteStackLayer.prototype.get = function(promiseFunction){
+        RouteTree.prototype.get = function(promiseFunction){
             let config = {};
             config["path"] = "";
             config["command"] = "GET";
             config["parent"] = this;
             config["promiseFunction"] = promiseFunction;
-            this.children.push(new RouteStackLayer(config));
+            this.children.push(new RouteTree(config));
             return this;
         };
 
         // UPDATE
-        RouteStackLayer.prototype.put = function(promiseFunction){
+        RouteTree.prototype.put = function(promiseFunction){
             let config = {};
             config["path"] = "";
             config["command"] = "PUT";
             config["parent"] = this;
             config["promiseFunction"] = promiseFunction;
-            this.children.push(new RouteStackLayer(config));
+            this.children.push(new RouteTree(config));
             return this;
         };
 
         // CREATE
-        RouteStackLayer.prototype.post = function(promiseFunction){
+        RouteTree.prototype.post = function(promiseFunction){
             let config = {};
             config["path"] = "";
             config["command"] = "POST";
             config["parent"] = this;
             config["promiseFunction"] = promiseFunction;
-            this.children.push(new RouteStackLayer(config));
+            this.children.push(new RouteTree(config));
             return this;
         };
 
         // DELETE
-        RouteStackLayer.prototype.delete = function(promiseFunction){
+        RouteTree.prototype.delete = function(promiseFunction){
             let config = {};
             config["path"] = "";
             config["command"] = "DELETE";
             config["parent"] = this;
             config["promiseFunction"] = promiseFunction;
-            this.children.push(new RouteStackLayer(config));
+            this.children.push(new RouteTree(config));
             return this;
         };
 
-        RouteStackLayer.prototype.route = function(thePath, subroutes){
+        RouteTree.prototype.route = function(thePath, subroutes){
             if(thePath === null || thePath === undefined || thePath === ""){
                 thePath = "/";
             }
@@ -122,7 +122,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
                 let config = {};
                 config["path"] = thePath;
                 config["parent"] = this;
-                let child = new RouteStackLayer(config);
+                let child = new RouteTree(config);
                 this.children.push(child);
 
                 // make sure there are no duplicate routes, leading to un-deterministic behavior
@@ -156,11 +156,11 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype.getPath = function(){
+        RouteTree.prototype.getPath = function(){
             return rawGetPathComponents(this.path).join("/");
         };
 
-        RouteStackLayer.prototype.listDuplicatePaths = function(){
+        RouteTree.prototype.listDuplicatePaths = function(){
             var uniqueHash = {};
             var dups = [];
 
@@ -180,7 +180,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return dups;
         };
 
-        RouteStackLayer.prototype.getFullPathComponents = function() {
+        RouteTree.prototype.getFullPathComponents = function() {
             var parentPath = [];
             if(this.parent !== null) {
                 parentPath = this.parent.getFullPathComponents();
@@ -191,12 +191,12 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return parentPath.concat(currentPath);
         };
 
-        RouteStackLayer.prototype.getFullPath = function(){
+        RouteTree.prototype.getFullPath = function(){
             return "/" + this.getFullPathComponents().join("/");
         };
 
 
-        RouteStackLayer.prototype.getAllRoutes = function(){
+        RouteTree.prototype.getAllRoutes = function(){
             if(this.children.length === 0){
                 return [{fullPath: this.getFullPath(),
                         command: this.getCommand(),
@@ -205,7 +205,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return flatten(this.children.map(elem => {return elem.getAllRoutes();}), 1);
         };
 
-        RouteStackLayer.prototype.getRoot = function(){
+        RouteTree.prototype.getRoot = function(){
             if(this.parent === null){
                 return this;
             }
@@ -214,15 +214,15 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype.getCommand = function(){
+        RouteTree.prototype.getCommand = function(){
             return this.command;
         };
 
-        RouteStackLayer.prototype.getChildren = function(){
+        RouteTree.prototype.getChildren = function(){
             return this.children;
         };
 
-        RouteStackLayer.prototype.getEnvironmentVariables = function(){
+        RouteTree.prototype.getEnvironmentVariables = function(){
             var combinedEnv = {};
             if(this.parent !== null){
                 combinedEnv = this.parent.getEnvironmentVariables();
@@ -236,11 +236,11 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return combinedEnv;
         };
 
-        RouteStackLayer.prototype.getFunctionByPathAndCommand = function(thePath, command){
+        RouteTree.prototype.getFunctionByPathAndCommand = function(thePath, command){
             return this._internalGetFunctionByPathAndCommand(thePath.split("/").filter(elem => {return elem != "" && elem !== null}), command)
         };
 
-        RouteStackLayer.prototype._internalGetFunctionByPathAndCommand = function(pathList, command){
+        RouteTree.prototype._internalGetFunctionByPathAndCommand = function(pathList, command){
             // we've traversed our stack tree all the way
             // find GET,POST,PUT,DELETE
             if(pathList.length == 0){
@@ -270,7 +270,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype.getRequiredAWSPolicies = function(){
+        RouteTree.prototype.getRequiredAWSPolicies = function(){
             if(this.parent !== null){
                 let alreadyThereHash = {};
                 return this.parent.getRequiredAWSPolicies().concat(this.requiredPolicies)
@@ -293,7 +293,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             }
         };
 
-        RouteStackLayer.prototype.getAllAWSPoliciesInTree = function(){
+        RouteTree.prototype.getAllAWSPoliciesInTree = function(){
             if(this.children.length === 0){
                 return this.requiredPolicies;
             }
@@ -306,5 +306,5 @@ underscore.extend(module.exports, {newInst: function init(_options) {
         };
 
 
-        return new RouteStackLayer(_options);
+        return new RouteTree(_options);
     }});

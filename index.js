@@ -1,4 +1,4 @@
-const RouteStackLayer = require("./RouteStackLayer");
+const RouteTree = require("./RouteTree");
 
 var _instanceOfServless = null;
 
@@ -10,8 +10,8 @@ function Servless(config) {
     this.root = null;
 };
 
-Servless.prototype.route = function(path) {
-    this.root = RouteStackLayer.newInst().route(path);
+Servless.prototype.route = function(path, subroutes) {
+    this.root = RouteTree.newInst().route(path, subroutes);
     return this.root;
 };
 
@@ -52,7 +52,7 @@ exports.App = function (_options) {
 };
 
 exports.Routes = function () {
-    return RouteStackLayer.newInst().route();
+    return RouteTree.newInst().route();
 };
 
 module.exports = exports;

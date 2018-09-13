@@ -3,7 +3,7 @@ const assert = require('assert');
 const servless = require("../index");
 const relativePaths = require("./addRelativeRoutes");
 
-describe('Route State Layer', function() {
+describe('Route State', function() {
     describe('Simple Route Test', function() {
         var app = servless.App();
 
