@@ -15,9 +15,9 @@ describe('Route State Layer', function() {
             assert.equal(emptyQoutes.getPath(), "");
             assert.equal(emptyQoutes.getFullPath(), "/");
 
-            let wayTooManyQuotes = servless.App().route("////////");
-            assert.equal(wayTooManyQuotes.getPath(), "");
-            assert.equal(wayTooManyQuotes.getFullPath(), "/");
+            let wayTooManySlashes = servless.App().route("////////");
+            assert.equal(wayTooManySlashes.getPath(), "");
+            assert.equal(wayTooManySlashes.getFullPath(), "/");
         });
 
         let tooManySlashes = baseRoute.route("/testing-too-many-slashes/");
