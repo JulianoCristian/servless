@@ -1,12 +1,15 @@
 const RouteTree = require("./RouteTree");
+const Resources = require("./Resources");
+const LambdaApiGatewayEventGenerator = require("./aws/LambaApiGatewayEventGenerator");
+const PassThruResource = require("./aws/PassThruResource");
 
 var _instanceOfServless = null;
 
 function Servless(config) {
-    this.config = config;
+    this.resources = Resources.newInst(config);
+    this.resources.injectableResource("event", PassThruResource.newInst());
 
-    this.endPoints = [];
-    this.enviornmentVariables = [];
+    this.lambdaGenerator = LambdaApiGatewayEventGenerator.newInst(this.resources);
     this.root = null;
 };
 
@@ -17,6 +20,35 @@ Servless.prototype.route = function(path, subroutes) {
 
 Servless.prototype.getRoot = function() {
     return this.root
+};
+
+Servless.prototype.getEvents = function() {
+    let eventGenerator = LambdaApiGatewayEventGenerator.newInst({resources: this.resources});
+
+    return this.root.getAllRoutes().map(route => {
+        return eventGenerator.generateEvent(route.routeObject);
+    });
+    //eventGenerator.generateEvent()
+};
+
+Servless.prototype.getResources = function(resources) {
+    return this.resources;
+};
+
+Servless.prototype.addResources = function(resources) {
+    return this.addResource(resources)
+};
+
+Servless.prototype.addResource = function(resources) {
+    if(Array.isArray(resources) === true){
+        resources.map(elem => {
+            this.resources.injectableResource(elem.getNameForResource(), elem);
+        });
+    }
+    else{
+        this.resources.injectableResource(resources.getNameForResource(), resources);
+    }
+    return this;
 };
 
 exports.getCurrentInstance = function(){
@@ -49,6 +81,14 @@ exports.handleCall = function(event, context, callback) {
 exports.App = function (_options) {
     _instanceOfServless = new Servless(_options);
     return _instanceOfServless;
+};
+
+exports.Resources = function (_options) {
+    return Resources.newInst(_options);
+};
+
+exports.DynamoResource = function (_options) {
+    return require("./aws/DynamoResource").newInst(_options);
 };
 
 exports.Routes = function () {

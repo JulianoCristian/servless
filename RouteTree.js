@@ -39,27 +39,6 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return this;
         };
 
-        RouteTree.prototype.needs = function(policies){
-            if(arguments.length === 1){
-                policies = arguments[0];
-
-                if(underscore.isArguments(policies)){
-                    return this._internalNeedsAsArray(policies)
-                }
-                else{
-                    return this._internalNeedsAsArray([policies])
-                }
-            }
-            else{
-                return this._internalNeedsAsArray(arguments)
-            }
-        };
-
-        RouteTree.prototype._internalNeedsAsArray = function(policiesList){
-            this.requiredPolicies = this.requiredPolicies.concat(policiesList);
-            return this;
-        };
-
         // READ
         RouteTree.prototype.get = function(promiseFunction){
             let config = {};
@@ -164,7 +143,6 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             var uniqueHash = {};
             var dups = [];
 
-            var listRoutes = this.getRoot().getAllRoutes();
             // note the call to get root, which will always give us the
             // root member of this tree
             this.getRoot().getAllRoutes().map(elem => {
@@ -222,6 +200,10 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return this.children;
         };
 
+        RouteTree.prototype.getFunction = function(){
+            return this.promiseFunction;
+        };
+
         RouteTree.prototype.getEnvironmentVariables = function(){
             var combinedEnv = {};
             if(this.parent !== null){
@@ -234,6 +216,10 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             });
 
             return combinedEnv;
+        };
+
+        RouteTree.prototype.getFunctionByPathAndCommand = function(thePath, command){
+            return this._internalGetFunctionByPathAndCommand(thePath.split("/").filter(elem => {return elem != "" && elem !== null}), command)
         };
 
         RouteTree.prototype.getFunctionByPathAndCommand = function(thePath, command){
@@ -267,41 +253,6 @@ underscore.extend(module.exports, {newInst: function init(_options) {
                 else{
                     throw("Could not find any route with this path");
                 }
-            }
-        };
-
-        RouteTree.prototype.getRequiredAWSPolicies = function(){
-            if(this.parent !== null){
-                let alreadyThereHash = {};
-                return this.parent.getRequiredAWSPolicies().concat(this.requiredPolicies)
-                    .filter(elem => {
-                        // use filter to remove duplicates with the help of a hash table
-                        // whenever we see an element add it the the hash with a true value
-                        // if we haven't see it, that means it should go in the array,
-                        // if we have that means discard it
-                        if(alreadyThereHash[elem] == true){
-                            return false
-                        }
-                        else{
-                            alreadyThereHash[elem] = true;
-                            return true;
-                        }
-                    });
-            }
-            else{
-                return this.requiredPolicies
-            }
-        };
-
-        RouteTree.prototype.getAllAWSPoliciesInTree = function(){
-            if(this.children.length === 0){
-                return this.requiredPolicies;
-            }
-            else{
-                return flatten(this.children.map(elem => {
-                    return elem.getAllAWSPoliciesInTree();
-                })
-                    .concat(this.requiredPolicies));
             }
         };
 
