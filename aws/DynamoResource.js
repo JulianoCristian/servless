@@ -30,8 +30,20 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             return this.tableName;
         };
 
+        DynamoResource.prototype.getReferenceNameForResource = function() {
+            return this.tableName.toUpperCase();
+        };
+
+        DynamoResource.prototype.shouldAddReferenceToCallingFunction = function() {
+            return true;
+        };
+
         DynamoResource.prototype.getPolicyList = function() {
             return ['AmazonDynamoDBFullAccess'];
+        };
+
+        DynamoResource.prototype.isRemoteResource = function(){
+            return true;
         };
 
         DynamoResource.prototype.getJSONForResource = function(){

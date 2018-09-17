@@ -3,6 +3,8 @@ const Resources = require("./Resources");
 const LambdaApiGatewayEventGenerator = require("./aws/LambaApiGatewayEventGenerator");
 const PassThruResource = require("./aws/PassThruResource");
 
+
+var _routeToFunctionMap = null;
 var _instanceOfServless = null;
 
 function Servless(config) {
@@ -58,6 +60,16 @@ exports.getCurrentInstance = function(){
 exports.handleCall = function(event, context, callback) {
     console.log(event.resource);
     console.log(event.requestContext.httpMethod);
+
+    // we only need to build this once, so if its null, pay the cost and build the whole thing
+    if(_routeToFunctionMap === null){
+        _routeToFunctionMap = {};
+        _instanceOfServless.getEvents().forEach(elem => {
+            _routeToFunctionMap[elem.getFullPath()] = {
+                resources: elem.get
+            }
+        })
+    }
 
     let f = _instanceOfServless.getRoot().getFunctionByPathAndCommand(event.resource, event.requestContext.httpMethod);
 

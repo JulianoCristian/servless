@@ -15,6 +15,7 @@ underscore.extend(module.exports, {newInst: function init(_options) {
             var pathComponents = theRouteObject.getFullPathComponents();
             var command = theRouteObject.getCommand();
             var funcArgNames = servlessUtils.getArguments(theRouteObject.getFunction());
+            var env = theRouteObject.getEnvironmentVariables();
 
             var resourceList = [];
 
@@ -30,9 +31,10 @@ underscore.extend(module.exports, {newInst: function init(_options) {
 
             var config = {};
             config["fullPathComponents"] = pathComponents;
+            config["executeFunction"] = theRouteObject.getFunction();
             config["command"] = command;
             config["resources"] = resourceList;
-            config["environment"] = [];
+            config["environment"] = env;
             config["policies"] = flatten(resourceList.map(elem =>{
                 var policies = elem.getPolicyList();
                 return policies;
